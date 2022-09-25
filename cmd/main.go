@@ -1,8 +1,8 @@
 package main
 
 import (
+	search_service "github.com/ColanderProject/full-text-search-on-disk/search"
 	"os"
-	search_service "github.com/sxwxs/FullTextSearchOnDisk/search"
 )
 
 func main() {
