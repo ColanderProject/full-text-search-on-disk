@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/qdmalekith/byrSearch-micro/pb";
+
+service SearchService {
+  rpc URL2ID(URL) returns(DocID) {}
+  rpc GetChildDocument(DocumentRequest) returns(DocumentList) {}
+  rpc GetDocumentHeader(DocID) returns(Document) {}
+  rpc GetMode(GetModeRequest) returns(ServerState) {}
+  rpc SetMode(ServerState) returns(SetModeResponse) {}
+  rpc DeleteDocument(DocID) returns(DeleteResponse) {}
+  rpc InsertDocument(InsertRequest) returns(InsertResponse) {}
+  rpc UpdateDocument(UpdateRequest) returns(UpdateResponse) {}
+  rpc Search(SearchRequest) returns (DocumentList) {}
+}
+
+message URL {
+  string url = 1;
+}
+
+message DocID {
+  int64 id = 1;
+}
+
+message DocumentRequest {
+  int64 id = 1;
+  int64 maxLevel = 2;//the default value should be -1
+  int64 maxSize = 3;//the default value should be -1
+}
+
+message GetModeRequest {
+}
+
+message HeaderRequest {
+  int64 id = 1;
+}
+
+message InsertRequest {
+  Document document = 1;
+}
+
+message SearchRequest {
+  repeated string requiredKeyword = 1;
+  repeated string optionalKeyword = 2;
+  repeated string forbiddenKeyword = 3;
+  google.protobuf.Timestamp startTime = 4;
+  google.protobuf.Timestamp endTime = 5;
+  string documentType = 6;
+  bool requireAbstract = 7;
+  bool isContainsAuthorConstraints = 8;
+  repeated string author = 9;
+}
+
+message ServerState {
+    ServerMode mode = 1;
+}
+
+message UpdateRequest {
+  Document document = 1;
+  int64 id = 2;
+}
+
+message DeleteResponse {
+  int64 id = 1;
+  StateCode state =2;
+  string error =3;//nullable
+}
+
+message Document {
+  string url = 1;
+  string title = 2;
+  string abstract = 3;
+  string data = 4;
+  bool flag = 5;//non-empty
+  repeated string authors = 6;
+  google.protobuf.Timestamp  createTime = 7;//non-empty
+  google.protobuf.Timestamp  updateTime = 8;//non-empty
+  int64 size = 9;
+  string hash = 10;//non-empty
+  int64 id = 11;//non-empty
+  repeated string documentID = 12;
+  string parentDocumentID = 13;
+  string documentType = 14;
+}
+
+message InsertResponse {
+  int64 id = 1;
+  StateCode state = 2;
+  string error = 3;//nullable
+}
+
+message DocumentList {
+  repeated Document response = 1;
+}
+
+message SetModeResponse {
+  StateCode state = 1;
+  ServerMode currentMode = 2;
+  string error = 3;//nullable
+}
+
+enum ServerMode {
+  READ_ONLY = 0;
+  UPDATE = 1;
+  INDEX_UPDATE = 2;
+}
+
+enum StateCode {
+  SUCCESS = 0;
+  FAILURE = 1;
+}
+
+message UpdateResponse {
+  int64 id = 1;
+  StateCode state = 2;
+  string error = 3;//nullable
+}
