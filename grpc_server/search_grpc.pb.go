@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: protobuf/search.proto
 
-package main
+package pb
 
 import (
 	context "context"
@@ -23,8 +23,10 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearchServiceClient interface {
 	URL2ID(ctx context.Context, in *URL, opts ...grpc.CallOption) (*DocID, error)
-	GetChildDocument(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocumentList, error)
+	GetMaxURL(ctx context.Context, in *GetMaxURLRequest, opts ...grpc.CallOption) (*DocID, error)
 	GetDocumentHeader(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error)
+	GetDocumentHeaderByURL(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error)
+	GetChildDocument(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocumentList, error)
 	GetMode(ctx context.Context, in *GetModeRequest, opts ...grpc.CallOption) (*ServerState, error)
 	SetMode(ctx context.Context, in *ServerState, opts ...grpc.CallOption) (*SetModeResponse, error)
 	DeleteDocument(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*DeleteResponse, error)
@@ -50,9 +52,9 @@ func (c *searchServiceClient) URL2ID(ctx context.Context, in *URL, opts ...grpc.
 	return out, nil
 }
 
-func (c *searchServiceClient) GetChildDocument(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocumentList, error) {
-	out := new(DocumentList)
-	err := c.cc.Invoke(ctx, "/SearchService/GetChildDocument", in, out, opts...)
+func (c *searchServiceClient) GetMaxURL(ctx context.Context, in *GetMaxURLRequest, opts ...grpc.CallOption) (*DocID, error) {
+	out := new(DocID)
+	err := c.cc.Invoke(ctx, "/SearchService/GetMaxURL", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +64,24 @@ func (c *searchServiceClient) GetChildDocument(ctx context.Context, in *Document
 func (c *searchServiceClient) GetDocumentHeader(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error) {
 	out := new(Document)
 	err := c.cc.Invoke(ctx, "/SearchService/GetDocumentHeader", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) GetDocumentHeaderByURL(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error) {
+	out := new(Document)
+	err := c.cc.Invoke(ctx, "/SearchService/GetDocumentHeaderByURL", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) GetChildDocument(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocumentList, error) {
+	out := new(DocumentList)
+	err := c.cc.Invoke(ctx, "/SearchService/GetChildDocument", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +147,10 @@ func (c *searchServiceClient) Search(ctx context.Context, in *SearchRequest, opt
 // for forward compatibility
 type SearchServiceServer interface {
 	URL2ID(context.Context, *URL) (*DocID, error)
-	GetChildDocument(context.Context, *DocumentRequest) (*DocumentList, error)
+	GetMaxURL(context.Context, *GetMaxURLRequest) (*DocID, error)
 	GetDocumentHeader(context.Context, *DocID) (*Document, error)
+	GetDocumentHeaderByURL(context.Context, *DocID) (*Document, error)
+	GetChildDocument(context.Context, *DocumentRequest) (*DocumentList, error)
 	GetMode(context.Context, *GetModeRequest) (*ServerState, error)
 	SetMode(context.Context, *ServerState) (*SetModeResponse, error)
 	DeleteDocument(context.Context, *DocID) (*DeleteResponse, error)
@@ -145,11 +167,17 @@ type UnimplementedSearchServiceServer struct {
 func (UnimplementedSearchServiceServer) URL2ID(context.Context, *URL) (*DocID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method URL2ID not implemented")
 }
-func (UnimplementedSearchServiceServer) GetChildDocument(context.Context, *DocumentRequest) (*DocumentList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetChildDocument not implemented")
+func (UnimplementedSearchServiceServer) GetMaxURL(context.Context, *GetMaxURLRequest) (*DocID, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMaxURL not implemented")
 }
 func (UnimplementedSearchServiceServer) GetDocumentHeader(context.Context, *DocID) (*Document, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDocumentHeader not implemented")
+}
+func (UnimplementedSearchServiceServer) GetDocumentHeaderByURL(context.Context, *DocID) (*Document, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDocumentHeaderByURL not implemented")
+}
+func (UnimplementedSearchServiceServer) GetChildDocument(context.Context, *DocumentRequest) (*DocumentList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChildDocument not implemented")
 }
 func (UnimplementedSearchServiceServer) GetMode(context.Context, *GetModeRequest) (*ServerState, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMode not implemented")
@@ -200,20 +228,20 @@ func _SearchService_URL2ID_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SearchService_GetChildDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DocumentRequest)
+func _SearchService_GetMaxURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMaxURLRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SearchServiceServer).GetChildDocument(ctx, in)
+		return srv.(SearchServiceServer).GetMaxURL(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SearchService/GetChildDocument",
+		FullMethod: "/SearchService/GetMaxURL",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SearchServiceServer).GetChildDocument(ctx, req.(*DocumentRequest))
+		return srv.(SearchServiceServer).GetMaxURL(ctx, req.(*GetMaxURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -232,6 +260,42 @@ func _SearchService_GetDocumentHeader_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SearchServiceServer).GetDocumentHeader(ctx, req.(*DocID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_GetDocumentHeaderByURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DocID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).GetDocumentHeaderByURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/SearchService/GetDocumentHeaderByURL",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).GetDocumentHeaderByURL(ctx, req.(*DocID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_GetChildDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DocumentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).GetChildDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/SearchService/GetChildDocument",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).GetChildDocument(ctx, req.(*DocumentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -356,12 +420,20 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SearchService_URL2ID_Handler,
 		},
 		{
-			MethodName: "GetChildDocument",
-			Handler:    _SearchService_GetChildDocument_Handler,
+			MethodName: "GetMaxURL",
+			Handler:    _SearchService_GetMaxURL_Handler,
 		},
 		{
 			MethodName: "GetDocumentHeader",
 			Handler:    _SearchService_GetDocumentHeader_Handler,
+		},
+		{
+			MethodName: "GetDocumentHeaderByURL",
+			Handler:    _SearchService_GetDocumentHeaderByURL_Handler,
+		},
+		{
+			MethodName: "GetChildDocument",
+			Handler:    _SearchService_GetChildDocument_Handler,
 		},
 		{
 			MethodName: "GetMode",

@@ -6,8 +6,10 @@ option go_package = "github.com/qdmalekith/byrSearch-micro/pb";
 
 service SearchService {
   rpc URL2ID(URL) returns(DocID) {}
-  rpc GetChildDocument(DocumentRequest) returns(DocumentList) {}
+  rpc GetMaxURL(GetMaxURLRequest) returns(DocID) {}
   rpc GetDocumentHeader(DocID) returns(Document) {}
+  rpc GetDocumentHeaderByURL(DocID) returns(Document) {}
+  rpc GetChildDocument(DocumentRequest) returns(DocumentList) {}
   rpc GetMode(GetModeRequest) returns(ServerState) {}
   rpc SetMode(ServerState) returns(SetModeResponse) {}
   rpc DeleteDocument(DocID) returns(DeleteResponse) {}
@@ -18,6 +20,13 @@ service SearchService {
 
 message URL {
   string url = 1;
+}
+
+message InvertedIndexValue {
+  repeated int64 docIds = 1;
+}
+
+message GetMaxURLRequest {
 }
 
 message DocID {

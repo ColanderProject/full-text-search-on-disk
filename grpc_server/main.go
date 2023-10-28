@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync/atomic"
 
 	"github.com/cockroachdb/pebble"
 	"google.golang.org/grpc"
@@ -18,16 +19,22 @@ var db_head *pebble.DB
 var db_content *pebble.DB
 var db_index *pebble.DB
 var db_url_to_id *pebble.DB
+var nextDocId int64
 
 var (
 	port    = flag.Int("port", 50051, "The server port")
 	db_path = flag.String("db", "db", "Database root path")
 )
 
-// server is used to implement helloworld.GreeterServer.
 type server struct {
 	SearchServiceServer
 	mode ServerMode
+}
+
+func (s *server) GetMaxURL(_ context.Context, _ *GetMaxURLRequest) (*DocID, error) {
+	var doc_id DocID
+	doc_id.Id = nextDocId - 1
+	return &doc_id, nil
 }
 
 func (s *server) URL2ID(_ context.Context, url *URL) (*DocID, error) {
@@ -86,19 +93,25 @@ func (s *server) DeleteDocument(context.Context, *DocID) (*DeleteResponse, error
 
 func (s *server) InsertDocument(_ context.Context, req *InsertRequest) (*InsertResponse, error) {
 	var docId DocID
+	var response InsertResponse
+	response.Id = -1
+	req.Document.Id = atomic.AddInt64(&nextDocId, 1)
+	req.Document.Id--
 	docId.Id = req.Document.Id
 	raw_id, err := proto.Marshal(&docId)
 	if err != nil {
 		log.Println(err)
-		return nil, nil
+		return &response, nil
 	}
+	log.Printf("Current id = %d, url = %s", nextDocId, req.Document.Url)
 	raw_doc, err := proto.Marshal(req.Document)
+	response.Id = docId.Id
 	if err != nil {
 		log.Println(err)
-		return nil, nil
+		return &response, nil
 	}
 	db_head.Set(raw_id, raw_doc, pebble.Sync)
-	return nil, nil
+	return &response, nil
 }
 
 func (s *server) UpdateDocument(context.Context, *UpdateRequest) (*UpdateResponse, error) {
@@ -138,5 +151,14 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+	raw_doc_id, _, err := db_url_to_id.Get([]byte("MAX_DOC_ID_KEY"))
 
+	if err != nil {
+		log.Println(err)
+		nextDocId = 0
+	} else {
+		var doc_id DocID
+		proto.Unmarshal(raw_doc_id, &doc_id)
+		nextDocId = doc_id.Id
+	}
 }
