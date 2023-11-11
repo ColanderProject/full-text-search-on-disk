@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: protobuf/search.proto
 
-package pb
+package main
 
 import (
 	context "context"
@@ -22,17 +22,29 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearchServiceClient interface {
+	// DocID
 	URL2ID(ctx context.Context, in *URL, opts ...grpc.CallOption) (*DocID, error)
 	GetMaxURL(ctx context.Context, in *GetMaxURLRequest, opts ...grpc.CallOption) (*DocID, error)
-	GetDocumentHeader(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error)
-	GetDocumentHeaderByURL(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error)
-	GetChildDocument(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocumentList, error)
+	// Get Header
+	GetDocumentHeader(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*DocHeader, error)
+	GetDocumentHeaderByURL(ctx context.Context, in *URL, opts ...grpc.CallOption) (*DocHeader, error)
+	// Get Children Docs
+	GetChildDoc(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocList, error)
+	GetChildDocId(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocIdList, error)
+	// Server Mode
 	GetMode(ctx context.Context, in *GetModeRequest, opts ...grpc.CallOption) (*ServerState, error)
 	SetMode(ctx context.Context, in *ServerState, opts ...grpc.CallOption) (*SetModeResponse, error)
+	// Modify
 	DeleteDocument(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	InsertDocument(ctx context.Context, in *InsertRequest, opts ...grpc.CallOption) (*InsertResponse, error)
 	UpdateDocument(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
-	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocumentList, error)
+	// Search
+	SearchForDocId(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocIdList, error)
+	SearchForHeader(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocHeaderList, error)
+	SearchForDocument(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocList, error)
+	// Index building
+	DoCompact(ctx context.Context, in *DoCompactRequest, opts ...grpc.CallOption) (*GeneralResponse, error)
+	UpdateIndex(ctx context.Context, in *UpdateIndexRequest, opts ...grpc.CallOption) (*GeneralResponse, error)
 }
 
 type searchServiceClient struct {
@@ -61,8 +73,8 @@ func (c *searchServiceClient) GetMaxURL(ctx context.Context, in *GetMaxURLReques
 	return out, nil
 }
 
-func (c *searchServiceClient) GetDocumentHeader(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error) {
-	out := new(Document)
+func (c *searchServiceClient) GetDocumentHeader(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*DocHeader, error) {
+	out := new(DocHeader)
 	err := c.cc.Invoke(ctx, "/SearchService/GetDocumentHeader", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -70,8 +82,8 @@ func (c *searchServiceClient) GetDocumentHeader(ctx context.Context, in *DocID, 
 	return out, nil
 }
 
-func (c *searchServiceClient) GetDocumentHeaderByURL(ctx context.Context, in *DocID, opts ...grpc.CallOption) (*Document, error) {
-	out := new(Document)
+func (c *searchServiceClient) GetDocumentHeaderByURL(ctx context.Context, in *URL, opts ...grpc.CallOption) (*DocHeader, error) {
+	out := new(DocHeader)
 	err := c.cc.Invoke(ctx, "/SearchService/GetDocumentHeaderByURL", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -79,9 +91,18 @@ func (c *searchServiceClient) GetDocumentHeaderByURL(ctx context.Context, in *Do
 	return out, nil
 }
 
-func (c *searchServiceClient) GetChildDocument(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocumentList, error) {
-	out := new(DocumentList)
-	err := c.cc.Invoke(ctx, "/SearchService/GetChildDocument", in, out, opts...)
+func (c *searchServiceClient) GetChildDoc(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocList, error) {
+	out := new(DocList)
+	err := c.cc.Invoke(ctx, "/SearchService/GetChildDoc", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) GetChildDocId(ctx context.Context, in *DocumentRequest, opts ...grpc.CallOption) (*DocIdList, error) {
+	out := new(DocIdList)
+	err := c.cc.Invoke(ctx, "/SearchService/GetChildDocId", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,9 +154,45 @@ func (c *searchServiceClient) UpdateDocument(ctx context.Context, in *UpdateRequ
 	return out, nil
 }
 
-func (c *searchServiceClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocumentList, error) {
-	out := new(DocumentList)
-	err := c.cc.Invoke(ctx, "/SearchService/Search", in, out, opts...)
+func (c *searchServiceClient) SearchForDocId(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocIdList, error) {
+	out := new(DocIdList)
+	err := c.cc.Invoke(ctx, "/SearchService/SearchForDocId", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) SearchForHeader(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocHeaderList, error) {
+	out := new(DocHeaderList)
+	err := c.cc.Invoke(ctx, "/SearchService/SearchForHeader", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) SearchForDocument(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*DocList, error) {
+	out := new(DocList)
+	err := c.cc.Invoke(ctx, "/SearchService/SearchForDocument", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) DoCompact(ctx context.Context, in *DoCompactRequest, opts ...grpc.CallOption) (*GeneralResponse, error) {
+	out := new(GeneralResponse)
+	err := c.cc.Invoke(ctx, "/SearchService/DoCompact", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) UpdateIndex(ctx context.Context, in *UpdateIndexRequest, opts ...grpc.CallOption) (*GeneralResponse, error) {
+	out := new(GeneralResponse)
+	err := c.cc.Invoke(ctx, "/SearchService/UpdateIndex", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -146,17 +203,29 @@ func (c *searchServiceClient) Search(ctx context.Context, in *SearchRequest, opt
 // All implementations must embed UnimplementedSearchServiceServer
 // for forward compatibility
 type SearchServiceServer interface {
+	// DocID
 	URL2ID(context.Context, *URL) (*DocID, error)
 	GetMaxURL(context.Context, *GetMaxURLRequest) (*DocID, error)
-	GetDocumentHeader(context.Context, *DocID) (*Document, error)
-	GetDocumentHeaderByURL(context.Context, *DocID) (*Document, error)
-	GetChildDocument(context.Context, *DocumentRequest) (*DocumentList, error)
+	// Get Header
+	GetDocumentHeader(context.Context, *DocID) (*DocHeader, error)
+	GetDocumentHeaderByURL(context.Context, *URL) (*DocHeader, error)
+	// Get Children Docs
+	GetChildDoc(context.Context, *DocumentRequest) (*DocList, error)
+	GetChildDocId(context.Context, *DocumentRequest) (*DocIdList, error)
+	// Server Mode
 	GetMode(context.Context, *GetModeRequest) (*ServerState, error)
 	SetMode(context.Context, *ServerState) (*SetModeResponse, error)
+	// Modify
 	DeleteDocument(context.Context, *DocID) (*DeleteResponse, error)
 	InsertDocument(context.Context, *InsertRequest) (*InsertResponse, error)
 	UpdateDocument(context.Context, *UpdateRequest) (*UpdateResponse, error)
-	Search(context.Context, *SearchRequest) (*DocumentList, error)
+	// Search
+	SearchForDocId(context.Context, *SearchRequest) (*DocIdList, error)
+	SearchForHeader(context.Context, *SearchRequest) (*DocHeaderList, error)
+	SearchForDocument(context.Context, *SearchRequest) (*DocList, error)
+	// Index building
+	DoCompact(context.Context, *DoCompactRequest) (*GeneralResponse, error)
+	UpdateIndex(context.Context, *UpdateIndexRequest) (*GeneralResponse, error)
 	mustEmbedUnimplementedSearchServiceServer()
 }
 
@@ -170,14 +239,17 @@ func (UnimplementedSearchServiceServer) URL2ID(context.Context, *URL) (*DocID, e
 func (UnimplementedSearchServiceServer) GetMaxURL(context.Context, *GetMaxURLRequest) (*DocID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMaxURL not implemented")
 }
-func (UnimplementedSearchServiceServer) GetDocumentHeader(context.Context, *DocID) (*Document, error) {
+func (UnimplementedSearchServiceServer) GetDocumentHeader(context.Context, *DocID) (*DocHeader, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDocumentHeader not implemented")
 }
-func (UnimplementedSearchServiceServer) GetDocumentHeaderByURL(context.Context, *DocID) (*Document, error) {
+func (UnimplementedSearchServiceServer) GetDocumentHeaderByURL(context.Context, *URL) (*DocHeader, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDocumentHeaderByURL not implemented")
 }
-func (UnimplementedSearchServiceServer) GetChildDocument(context.Context, *DocumentRequest) (*DocumentList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetChildDocument not implemented")
+func (UnimplementedSearchServiceServer) GetChildDoc(context.Context, *DocumentRequest) (*DocList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChildDoc not implemented")
+}
+func (UnimplementedSearchServiceServer) GetChildDocId(context.Context, *DocumentRequest) (*DocIdList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChildDocId not implemented")
 }
 func (UnimplementedSearchServiceServer) GetMode(context.Context, *GetModeRequest) (*ServerState, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMode not implemented")
@@ -194,8 +266,20 @@ func (UnimplementedSearchServiceServer) InsertDocument(context.Context, *InsertR
 func (UnimplementedSearchServiceServer) UpdateDocument(context.Context, *UpdateRequest) (*UpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDocument not implemented")
 }
-func (UnimplementedSearchServiceServer) Search(context.Context, *SearchRequest) (*DocumentList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Search not implemented")
+func (UnimplementedSearchServiceServer) SearchForDocId(context.Context, *SearchRequest) (*DocIdList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchForDocId not implemented")
+}
+func (UnimplementedSearchServiceServer) SearchForHeader(context.Context, *SearchRequest) (*DocHeaderList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchForHeader not implemented")
+}
+func (UnimplementedSearchServiceServer) SearchForDocument(context.Context, *SearchRequest) (*DocList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchForDocument not implemented")
+}
+func (UnimplementedSearchServiceServer) DoCompact(context.Context, *DoCompactRequest) (*GeneralResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DoCompact not implemented")
+}
+func (UnimplementedSearchServiceServer) UpdateIndex(context.Context, *UpdateIndexRequest) (*GeneralResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateIndex not implemented")
 }
 func (UnimplementedSearchServiceServer) mustEmbedUnimplementedSearchServiceServer() {}
 
@@ -265,7 +349,7 @@ func _SearchService_GetDocumentHeader_Handler(srv interface{}, ctx context.Conte
 }
 
 func _SearchService_GetDocumentHeaderByURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DocID)
+	in := new(URL)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -277,25 +361,43 @@ func _SearchService_GetDocumentHeaderByURL_Handler(srv interface{}, ctx context.
 		FullMethod: "/SearchService/GetDocumentHeaderByURL",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SearchServiceServer).GetDocumentHeaderByURL(ctx, req.(*DocID))
+		return srv.(SearchServiceServer).GetDocumentHeaderByURL(ctx, req.(*URL))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SearchService_GetChildDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _SearchService_GetChildDoc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DocumentRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SearchServiceServer).GetChildDocument(ctx, in)
+		return srv.(SearchServiceServer).GetChildDoc(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SearchService/GetChildDocument",
+		FullMethod: "/SearchService/GetChildDoc",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SearchServiceServer).GetChildDocument(ctx, req.(*DocumentRequest))
+		return srv.(SearchServiceServer).GetChildDoc(ctx, req.(*DocumentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_GetChildDocId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DocumentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).GetChildDocId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/SearchService/GetChildDocId",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).GetChildDocId(ctx, req.(*DocumentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -390,20 +492,92 @@ func _SearchService_UpdateDocument_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SearchService_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _SearchService_SearchForDocId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SearchServiceServer).Search(ctx, in)
+		return srv.(SearchServiceServer).SearchForDocId(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SearchService/Search",
+		FullMethod: "/SearchService/SearchForDocId",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SearchServiceServer).Search(ctx, req.(*SearchRequest))
+		return srv.(SearchServiceServer).SearchForDocId(ctx, req.(*SearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_SearchForHeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).SearchForHeader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/SearchService/SearchForHeader",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).SearchForHeader(ctx, req.(*SearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_SearchForDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).SearchForDocument(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/SearchService/SearchForDocument",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).SearchForDocument(ctx, req.(*SearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_DoCompact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DoCompactRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).DoCompact(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/SearchService/DoCompact",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).DoCompact(ctx, req.(*DoCompactRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_UpdateIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateIndexRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).UpdateIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/SearchService/UpdateIndex",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).UpdateIndex(ctx, req.(*UpdateIndexRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -432,8 +606,12 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SearchService_GetDocumentHeaderByURL_Handler,
 		},
 		{
-			MethodName: "GetChildDocument",
-			Handler:    _SearchService_GetChildDocument_Handler,
+			MethodName: "GetChildDoc",
+			Handler:    _SearchService_GetChildDoc_Handler,
+		},
+		{
+			MethodName: "GetChildDocId",
+			Handler:    _SearchService_GetChildDocId_Handler,
 		},
 		{
 			MethodName: "GetMode",
@@ -456,8 +634,24 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SearchService_UpdateDocument_Handler,
 		},
 		{
-			MethodName: "Search",
-			Handler:    _SearchService_Search_Handler,
+			MethodName: "SearchForDocId",
+			Handler:    _SearchService_SearchForDocId_Handler,
+		},
+		{
+			MethodName: "SearchForHeader",
+			Handler:    _SearchService_SearchForHeader_Handler,
+		},
+		{
+			MethodName: "SearchForDocument",
+			Handler:    _SearchService_SearchForDocument_Handler,
+		},
+		{
+			MethodName: "DoCompact",
+			Handler:    _SearchService_DoCompact_Handler,
+		},
+		{
+			MethodName: "UpdateIndex",
+			Handler:    _SearchService_UpdateIndex_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
