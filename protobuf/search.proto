@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/qdmalekith/byrSearch-micro/pb";
+
+service SearchService {
+  // DocID
+  rpc URL2ID(URL) returns(DocID) {}
+  rpc GetMaxURL(GetMaxURLRequest) returns(DocID) {}
+  // Get Header
+  rpc GetDocumentHeader(DocID) returns(DocHeader) {}
+  rpc GetDocumentHeaderByURL(URL) returns(DocHeader) {}
+  // Get Children Docs
+  rpc GetChildDoc(DocumentRequest) returns(DocList) {}
+  rpc GetChildDocId(DocumentRequest) returns(DocIdList) {}
+  // Server Mode
+  rpc GetMode(GetModeRequest) returns(ServerState) {}
+  rpc SetMode(ServerState) returns(SetModeResponse) {}
+  // Modify
+  rpc DeleteDocument(DocID) returns(DeleteResponse) {}
+  rpc InsertDocument(InsertRequest) returns(InsertResponse) {}
+  rpc UpdateDocument(UpdateRequest) returns(UpdateResponse) {}
+  // Search
+  rpc SearchForDocId(SearchRequest) returns (DocIdList) {}
+  rpc SearchForHeader(SearchRequest) returns (DocHeaderList) {}
+  rpc SearchForDocument(SearchRequest) returns (DocList) {}
+  // Index building
+  rpc DoCompact(DoCompactRequest) returns (GeneralResponse) {}
+  rpc UpdateIndex(UpdateIndexRequest) returns (GeneralResponse) {}
+}
+
+message URL {
+  string url = 1;
+}
+
+message InvertedIndexValue {
+  repeated int64 docIds = 1;
+}
+
+message GetMaxURLRequest {
+}
+
+message DocID {
+  int64 id = 1;
+}
+
+message DocumentRequest {
+  int64 id = 1;
+  int64 maxLevel = 2;//the default value should be -1
+  int64 maxSize = 3;//the default value should be -1
+}
+
+message GetModeRequest {
+}
+
+message DoCompactRequest {
+}
+
+message UpdateIndexRequest {
+}
+
+message InsertRequest {
+  Document document = 1;
+}
+
+message SearchRequest {
+  repeated string requiredKeyword = 1;
+  repeated string optionalKeyword = 2;
+  repeated string forbiddenKeyword = 3;
+  google.protobuf.Timestamp startTime = 4;
+  google.protobuf.Timestamp endTime = 5;
+  string documentType = 6;
+  bool requireAbstract = 7;
+  bool isContainsAuthorConstraints = 8;
+  repeated string author = 9;
+}
+
+message ServerState {
+    ServerMode mode = 1;
+}
+
+message UpdateRequest {
+  Document document = 1;
+  int64 id = 2;
+}
+
+message DeleteResponse {
+  int64 id = 1;
+  StateCode state =2;
+  string error =3;//nullable
+}
+
+message DocHeader {
+  string url = 1;
+  string title = 2;
+  repeated string authors = 3;
+  google.protobuf.Timestamp  createTime = 4;//non-empty
+  google.protobuf.Timestamp  updateTime = 5;//non-empty
+  int64 hash = 6;
+  string abstract = 7;
+}
+
+message DocHeaderList {
+  repeated DocHeader headerList = 1;
+}
+
+message DocIdList {
+  repeated int64 docIdList = 1;
+}
+
+message Document {
+  string url = 1;
+  string title = 2;
+  repeated string authors = 3;
+  google.protobuf.Timestamp  createTime = 4;//non-empty
+  google.protobuf.Timestamp  updateTime = 5;//non-empty
+  int64 hash = 6;//non-empty
+  string data = 7;
+  int64 size = 8;
+  int64 id = 9;//non-empty
+  int64 parentDocumentID = 10;
+  string documentType = 11;
+}
+
+message InsertResponse {
+  int64 id = 1;
+  StateCode state = 2;
+  string error = 3;
+}
+
+message DocList {
+  repeated Document response = 1;
+}
+
+message SetModeResponse {
+  StateCode state = 1;
+  ServerMode currentMode = 2;
+  string error = 3;//nullable
+}
+
+enum ServerMode {
+  READ_ONLY = 0;
+  UPDATE = 1;
+  INDEX_UPDATE = 2;
+}
+
+enum StateCode {
+  SUCCESS = 0;
+  FAILURE = 1;
+  REPEATED_ID = 2;
+}
+
+message UpdateResponse {
+  int64 id = 1;
+  StateCode state = 2;
+  string error = 3; //nullable
+}
+
+message GeneralResponse {
+  StateCode state = 1;
+  string error = 2; //nullable
+}

@@ -1,1 +1,5 @@
 *.exe
+*/__pycache__/
+grpc_server/db/
+grpc_server/grpc_server
+__pycache__/
